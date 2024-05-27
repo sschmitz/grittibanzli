@@ -1,3 +1,4 @@
+// Copyright 2024 Silvan Schmitz
 // Copyright 2018 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -1210,6 +1211,7 @@ struct ChoicesEncoded {
   std::vector<uint8_t> distcodes;
   std::vector<uint8_t> lenextra;
   std::vector<uint8_t> distextra;
+  std::vector<uint8_t> shortlens;
 };
 
 
@@ -1225,6 +1227,8 @@ std::vector<uint8_t> Combine(const ChoicesEncoded& encoded) {
   AppendTo(encoded.lenextra, &result);
   Write32Bit(encoded.distextra.size(), &result);
   AppendTo(encoded.distextra, &result);
+  Write32Bit(encoded.shortlens.size(), &result);
+  AppendTo(encoded.shortlens, &result);
   return result;
 }
 
@@ -1255,6 +1259,11 @@ bool Split(const uint8_t* data, size_t size, ChoicesEncoded* result) {
   if (!Read32Bit(data, size, &pos, &subsize)) return FAILURE;
   if (pos + subsize > size) return FAILURE;
   result->distextra.assign(data + pos, data + pos + subsize);
+  pos += subsize;
+
+  if (!Read32Bit(data, size, &pos, &subsize)) return FAILURE;
+  if (pos + subsize > size) return FAILURE;
+  result->shortlens.assign(data + pos, data + pos + subsize);
   pos += subsize;
 
   return true;
@@ -1346,8 +1355,8 @@ bool EncodeChoices(const uint8_t* data, size_t size,
         // encoded_len meaning:
         // 0: prediction correct
         // 1: actual len is 1
-        // [2..pred_len-1]: actual len is encoded_len
-        // [pred_len..254]: actual len is pred_len - encoded_len + 1
+        // [2..pred_len-1]: actual len is pred_len - encoded_len + 1
+        // [pred_len..254]: actual len is encoded_len
         // 255: actual len encoded exactly in lenextra
 
         if (pred_len == actual_len) {
@@ -1355,7 +1364,7 @@ bool EncodeChoices(const uint8_t* data, size_t size,
         } else if (actual_len == 1) {
           encoded_len = 1;
         } else {
-          encoded_len = (actual_len > pred_len)
+          encoded_len = (actual_len >= pred_len)
             ? actual_len : (pred_len - actual_len + 1);
           if (encoded_len < 2 || encoded_len > 254) encoded_len = 255;
         }
@@ -1364,6 +1373,8 @@ bool EncodeChoices(const uint8_t* data, size_t size,
         if (encoded_len == 255) {
           encoded->lenextra.push_back(actual_len - kMinDeflateLength);
         }
+      } else {
+        Write32Bit(actual_len - 1, &encoded->shortlens);
       }
 
       if (actual_len > 1) {
@@ -1405,6 +1416,7 @@ bool DecodeChoices(const uint8_t* data, size_t size,
   size_t distpos = 0;
   size_t lenextrapos = 0;
   size_t distextrapos = 0;
+  size_t shortlenpos = 0;
 
   if (headerpos >= encoded.headers.size()) return FAILURE;
   int level = encoded.headers[headerpos++];
@@ -1476,6 +1488,12 @@ bool DecodeChoices(const uint8_t* data, size_t size,
         if (actual_len < 0 || actual_len > kMaxDeflateLength) {
           return FAILURE;
         }
+      } else {
+        if (!Read32Bit(encoded.shortlens.data(), encoded.shortlens.size(),
+            &shortlenpos, &actual_len)) {
+          return FAILURE;
+        }
+        actual_len++;
       }
 
       int actual_dist = 0;

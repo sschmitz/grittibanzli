@@ -1,3 +1,4 @@
+// Copyright 2024 Silvan Schmitz
 // Copyright 2018 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -251,7 +252,7 @@ int Run(int argc, char *argv[]) {
     }
     if (fname_choices.empty()) InvalidArgument(argv[0], ": --choices missing");
     if (fname_data.empty()) InvalidArgument(argv[0], ": --data missing");
-    if (!format_gzip && fname_meta.empty()) {
+    if (format_gzip && fname_meta.empty()) {
       InvalidArgument(argv[0], ": --meta missing");
     }
 
