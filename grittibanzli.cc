@@ -13,6 +13,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <cstring>
 #include "grittibanzli.h"
 
 #include <limits.h>
@@ -1607,3 +1608,53 @@ bool Ungrittibanzli(const uint8_t* uncompressed, size_t size,
 }
 
 }  // namespace grittibanzli
+
+extern "C"
+int Grittibanzli(const uint8_t* const deflated, const size_t size,
+                 uint8_t** const uncompressed, size_t* const uncompressed_size,
+                 uint8_t** const choices_encoded, size_t* const choices_size) {
+  std::vector<uint8_t> inflated, choices;
+  if (!grittibanzli::Grittibanzli(deflated, size, &inflated, &choices)) {
+    return -1;
+  }
+
+  *uncompressed_size = inflated.size();
+  *choices_size = choices.size();
+
+  *uncompressed = (uint8_t*) malloc(*uncompressed_size);
+  if (nullptr == *uncompressed) {
+    return -1;
+  }
+
+  *choices_encoded = (uint8_t*) malloc(*choices_size);
+  if (nullptr == *choices_encoded) {
+    free(uncompressed);
+    return -1;
+  }
+
+  memcpy(*uncompressed, inflated.data(), *uncompressed_size);
+  memcpy(*choices_encoded, choices.data(), *choices_size);
+
+  return 0;
+}
+
+extern "C"
+int Ungrittibanzli(const uint8_t* const uncompressed, const size_t size,
+                   const uint8_t* const choices_encoded,
+                   const size_t choices_size, uint8_t** const deflated,
+                   size_t* const deflated_size) {
+  std::vector<uint8_t> compressed;
+  if (!grittibanzli::Ungrittibanzli(uncompressed, size,
+      choices_encoded, choices_size, &compressed)) {
+    return -1;
+  }
+
+  *deflated_size = compressed.size();
+  *deflated = (uint8_t*) malloc(*deflated_size);
+  if (nullptr == *deflated) {
+    return -1;
+  }
+  memcpy(*deflated, compressed.data(), *deflated_size);
+
+  return 0;
+}

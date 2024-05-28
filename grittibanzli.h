@@ -1,3 +1,4 @@
+// Copyright 2024 Silvan Schmitz
 // Copyright 2018 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,9 +16,10 @@
 #ifndef GRITTIBANZLI_H_
 #define GRITTIBANZLI_H_
 
-#include <stdint.h>
-#include <string.h>
 
+#ifdef __cplusplus
+
+#include <cstdint>
 #include <vector>
 
 namespace grittibanzli {
@@ -40,5 +42,22 @@ bool Ungrittibanzli(const uint8_t* uncompressed, size_t uncompressed_size,
                     std::vector<uint8_t>* deflated);
 
 }  // namespace grittibanzli
+
+extern "C" {
+#else  // __cplusplus
+#include <stdint.h>
+#endif  // __cplusplus
+
+int Grittibanzli(const uint8_t* deflated, size_t size,
+                 uint8_t** uncompressed, size_t* uncompressed_size,
+                 uint8_t** choices_encoded, size_t* choices_size);
+
+int Ungrittibanzli(const uint8_t* uncompressed, size_t size,
+                   const uint8_t* choices_encoded, size_t choices_size,
+                   uint8_t** deflated, size_t* deflated_size);
+
+#ifdef __cplusplus
+}  // extern "C"
+#endif  // __cplusplus
 
 #endif  // GRITTIBANZLI_H_

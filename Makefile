@@ -2,8 +2,14 @@ CXX = g++
 
 CXXFLAGS := -std=c++11 -W -Wall -Wextra -O2 $(CXXFLAGS)
 
-.PHONY: grittibanzli
+.PHONY: clean
 
 # grittibanzli binary tool
-grittibanzli:
-	$(CXX) main.cc grittibanzli.cc $(CXXFLAGS) -o grittibanzli
+grittibanzli: main.cc grittibanzli.h grittibanzli.o
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -o grittibanzli main.cc grittibanzli.o
+
+grittibanzli.o: grittibanzli.cc grittibanzli.h
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c grittibanzli.cc
+
+clean:
+	$(RM) -r grittibanzli *.o
