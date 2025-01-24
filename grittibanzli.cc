@@ -1,4 +1,4 @@
-// Copyright 2024 Silvan Schmitz
+// Copyright 2024-2025 Silvan Schmitz
 // Copyright 2018 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -1609,6 +1609,21 @@ bool Ungrittibanzli(const uint8_t* uncompressed, size_t size,
 
 }  // namespace grittibanzli
 
+/**
+ * Decompress DEFLATEd data and generate metadata containing encoder choices.
+ * 
+ * @param[in]  deflated The DEFLATEd source data.
+ * @param[in]  size Size of `deflated` in octets.
+ * @param[out] uncompressed Decompressed data. Must be `free()`'d by the caller
+ *                          unless the function returns a failure status.
+ * @param[out] uncompressed_size Size of `uncompressed` in octets.
+ * @param[out] choices_encoded Metadata describing encoder choices. Must be
+ *                             `free()`'d by the caller unless the function
+ *                             returns a failure status.
+ * @param[out] choices_size Size of `choices_encoded` in octets.
+ * 
+ * @return 0 on success, -1 on failure.
+ */
 extern "C"
 int Grittibanzli(const uint8_t* const deflated, const size_t size,
                  uint8_t** const uncompressed, size_t* const uncompressed_size,
@@ -1628,7 +1643,8 @@ int Grittibanzli(const uint8_t* const deflated, const size_t size,
 
   *choices_encoded = (uint8_t*) malloc(*choices_size);
   if (nullptr == *choices_encoded) {
-    free(uncompressed);
+    free(*uncompressed);
+    *uncompressed = nullptr;
     return -1;
   }
 
@@ -1638,6 +1654,20 @@ int Grittibanzli(const uint8_t* const deflated, const size_t size,
   return 0;
 }
 
+/**
+ * Compress data with the DEFLATE algorithm, using supplied encoding choices to
+ * recreate the original input stream to `Grittibanzli()` byte-for-byte.
+ * 
+ * @param[in]  uncompressed The source data.
+ * @param[in]  size Size of `uncompressed` in octets.
+ * @param[in]  choices_encoded Metadata describing encoder choices.
+ * @param[in]  choices_size Size of `choices_encoded` in octets.
+ * @param[out] deflated Compressed data. Must be `free()`'d by the caller unless
+ *                      the function returns a failure status.
+ * @param[out] deflated_size Size of `deflated` in octets.
+ * 
+ * @return 0 on success, -1 on failure.
+ */
 extern "C"
 int Ungrittibanzli(const uint8_t* const uncompressed, const size_t size,
                    const uint8_t* const choices_encoded,
