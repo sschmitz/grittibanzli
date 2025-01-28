@@ -13,15 +13,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <cstring>
 #include "grittibanzli.h"
 
-#include <limits.h>
-
+#include <limits>
 #ifdef GRITTIBANZLI_PRINT_DEBUG
 #include <iostream>
 #endif  // GRITTIBANZLI_PRINT_DEBUG
-#include <algorithm>
+
+#include <cstdlib>
 
 namespace grittibanzli {
 
@@ -610,7 +609,7 @@ bool DeflateEncode(const uint8_t* data, size_t size,
         if (block.lengths[i] > 1) {
           lengths.push_back(block.lengths[i]);
           distances.push_back(block.dists[i]);
-          literals.push_back(INT_MAX);
+          literals.push_back(std::numeric_limits<int>::max());
         } else {
           if (pos >= size) return FAILURE;
           lengths.push_back(0);
@@ -1575,7 +1574,8 @@ bool Grittibanzli(const uint8_t* deflated, size_t size,
   // quick verify (not full verification)
   std::vector<uint8_t> test;
   if (!DeflateEncode(uncompressed->data(), uncompressed->size(), choices, &test)
-      || test.size() != size || memcmp(test.data(), deflated, size) != 0) {
+      || test.size() != size
+      || !std::equal(std::begin(test), std::end(test), deflated)) {
 #ifdef GRITTIBANZLI_CRASH_ON_INTERNAL_ERROR
     std::exit(1);  // for fuzzing, to detect deflate roundtrip mismatch
 #endif  // GRITTIBANZLI_CRASH_ON_INTERNAL_ERROR
@@ -1648,8 +1648,8 @@ int Grittibanzli(const uint8_t* const deflated, const size_t size,
     return -1;
   }
 
-  memcpy(*uncompressed, inflated.data(), *uncompressed_size);
-  memcpy(*choices_encoded, choices.data(), *choices_size);
+  std::copy(std::begin(inflated), std::end(inflated), *uncompressed);
+  std::copy(std::begin(choices), std::end(choices), *choices_encoded);
 
   return 0;
 }
@@ -1684,7 +1684,7 @@ int Ungrittibanzli(const uint8_t* const uncompressed, const size_t size,
   if (nullptr == *deflated) {
     return -1;
   }
-  memcpy(*deflated, compressed.data(), *deflated_size);
+  std::copy(std::begin(compressed), std::end(compressed), *deflated);
 
   return 0;
 }

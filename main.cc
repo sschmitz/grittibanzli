@@ -1,4 +1,4 @@
-// Copyright 2024 Silvan Schmitz
+// Copyright 2024-2025 Silvan Schmitz
 // Copyright 2018 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,16 +16,17 @@
 // This is an example binary using grittibanzli, supporting pure deflate and
 // gzip formats.
 
-#include <limits.h>
-#include <stdlib.h>
-
-#include <cassert>
-#include <cmath>
-#include <fstream>
 #include <iostream>
-#include <memory>
+#include <limits>
+#include <string>
+
+#include <cstdio>
 
 #include "grittibanzli.h"
+
+using std::uint8_t;
+using std::int64_t;
+using std::size_t;
 
 namespace grittibanzli {
 
@@ -47,7 +48,7 @@ int64_t GetFileSize(const std::string& filename) {
     return -1;
   }
   int64_t size = ftell(file);
-  if (size == LONG_MAX) size = -1;
+  if (size == std::numeric_limits<long>::max()) size = -1;
   fclose(file);
   return size;
 }

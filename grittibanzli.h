@@ -1,4 +1,4 @@
-// Copyright 2024 Silvan Schmitz
+// Copyright 2024-2025 Silvan Schmitz
 // Copyright 2018 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,9 +18,10 @@
 
 
 #ifdef __cplusplus
+#include <vector>
 
 #include <cstdint>
-#include <vector>
+typedef std::uint8_t uint8_t;
 
 namespace grittibanzli {
 
